@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Склады - Управление складом{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-building me-2"></i>Склады</h2>
+    <a href="{{ url_for('add_warehouse') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Добавить склад
+    </a>
+</div>
+
+<!-- Статистика складов -->
+<div class="row mb-4">
+    {% for warehouse in warehouses %}
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ warehouse.code }}</h5>
+                <span class="badge {% if warehouse.current_capacity < 60 %}bg-success
+                                  {% elif warehouse.current_capacity < 80 %}bg-warning
+                                  {% else %}bg-danger{% endif %}">
+                    {{ "%.1f"|format(warehouse.current_capacity) }}%
+                </span>
+            </div>
+            <div class="card-body">
+                <h4>{{ warehouse.name }}</h4>
+                <p class="text-muted mb-2">
+                    <i class="bi bi-geo-alt me-1"></i>{{ warehouse.location or 'Не указано' }}
+                </p>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Заполненность</small>
+                        <small>{{ "%.1f"|format(warehouse.current_capacity) }}%</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar 
+                            {% if warehouse.current_capacity < 60 %}bg-success
+                            {% elif warehouse.current_capacity < 80 %}bg-warning
+                            {% else %}bg-danger{% endif %}" 
+                            style="width: {{ warehouse.current_capacity }}%">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="p-2 bg-light rounded">
+                            <h6 class="mb-0 text-primary">{{ warehouse.product_count }}</h6>
+                            <small>Товаров</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 bg-light rounded">
+                            <h6 class="mb-0 text-warning">{{ warehouse.low_stock }}</h6>
+                            <small>Низкий запас</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="bi bi-box me-1"></i>{{ warehouse.total_quantity }} ед.
+                    </small><br>
+                    <small class="text-muted">
+                        <i class="bi bi-cash me-1"></i>
+                        {% if warehouse.total_value %}
+                            {{ "{:,.0f}".format(warehouse.total_value).replace(",", " ") }} руб.
+                        {% else %}
+                            0 руб.
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{{ url_for('edit_warehouse', warehouse_id=warehouse.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        
+                        <form method="POST" 
+                              action="{{ url_for('delete_warehouse', warehouse_id=warehouse.id) }}" 
+                              style="display: inline;"
+                              onsubmit="return confirm('Вы уверены, что хотите удалить склад {{ warehouse.name }}?');">
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        
+                        <a href="{{ url_for('products') }}?warehouse={{ warehouse.id }}" 
+                           class="btn btn-outline-info">
+                            <i class="bi bi-box-seam"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Детальная информация по складам</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Код</th>
+                        <th>Название</th>
+                        <th>Местоположение</th>
+                        <th>Вместимость</th>
+                        <th>Заполненность</th>
+                        <th>Товаров</th>
+                        <th>Общая стоимость</th>
+                        <th>Дата создания</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for warehouse in warehouses %}
+                    <tr>
+                        <td><strong>{{ warehouse.code }}</strong></td>
+                        <td>{{ warehouse.name }}</td>
+                        <td>{{ warehouse.location or '-' }}</td>
+                        <td>{{ warehouse.max_capacity }} ед.</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                    <div class="progress-bar 
+                                        {% if warehouse.current_capacity < 60 %}bg-success
+                                        {% elif warehouse.current_capacity < 80 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                        style="width: {{ warehouse.current_capacity }}%">
+                                    </div>
+                                </div>
+                                <span>{{ "%.1f"|format(warehouse.current_capacity) }}%</span>
+                            </div>
+                        </td>
+                        <td>{{ warehouse.product_count }}</td>
+                        <td>
+                            {% if warehouse.total_value %}
+                                {{ "{:,.0f}".format(warehouse.total_value).replace(",", " ") }} руб.
+                            {% else %}
+                                0 руб.
+                            {% endif %}
+                        </td>
+                        <td>{{ warehouse.created_at.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            {% if warehouse.current_capacity < 60 %}
+                            <span class="badge bg-success">Норма</span>
+                            {% elif warehouse.current_capacity < 80 %}
+                            <span class="badge bg-warning">Средняя</span>
+                            {% else %}
+                            <span class="badge bg-danger">Перегружен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('edit_warehouse', warehouse_id=warehouse.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                
+                                <form method="POST" 
+                                      action="{{ url_for('delete_warehouse', warehouse_id=warehouse.id) }}" 
+                                      style="display: inline;"
+                                      onsubmit="return confirm('Удалить склад {{ warehouse.name }}?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                
+                                <a href="{{ url_for('products') }}?warehouse={{ warehouse.id }}" 
+                                   class="btn btn-outline-info btn-sm">
+                                    <i class="bi bi-box-seam"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Аналитика складов -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Сравнение складов по стоимости</h6>
+            </div>
+            <div class="card-body">
+                {% set max_value = warehouses|map(attribute='total_value')|max %}
+                {% for warehouse in warehouses %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{{ warehouse.name }}</span>
+                        <span>
+                            {% if warehouse.total_value %}
+                                {{ "{:,.0f}".format(warehouse.total_value).replace(",", " ") }} руб.
+                            {% else %}
+                                0 руб.
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        {% if max_value and max_value > 0 %}
+                            {% set width = (warehouse.total_value / max_value * 100) %}
+                        {% else %}
+                            {% set width = 0 %}
+                        {% endif %}
+                        <div class="progress-bar bg-info" style="width: {{ width }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Проблемные зоны</h6>
+            </div>
+            <div class="card-body">
+                {% set high_load = warehouses|selectattr('current_capacity', 'gt', 80)|list %}
+                {% if high_load %}
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-exclamation-octagon me-2"></i>Высокая загрузка</h6>
+                    <ul class="mb-0">
+                        {% for warehouse in high_load %}
+                        <li>{{ warehouse.name }} - {{ "%.1f"|format(warehouse.current_capacity) }}%</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% set low_stock_warehouses = warehouses|selectattr('low_stock', 'gt', 0)|list %}
+                {% if low_stock_warehouses %}
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle me-2"></i>Товары с низким запасом</h6>
+                    <ul class="mb-0">
+                        {% for warehouse in low_stock_warehouses %}
+                        <li>{{ warehouse.name }} - {{ warehouse.low_stock }} товаров</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% if not high_load and not low_stock_warehouses %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>Все склады работают в нормальном режиме!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

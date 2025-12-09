@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Движения товаров - Управление складом{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-arrow-left-right me-2"></i>Движения товаров</h2>
+    <a href="{{ url_for('add_movement') }}" class="btn btn-primary btn-custom">
+        <i class="bi bi-plus-circle me-2"></i>Добавить движение
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <select class="form-select" name="type">
+                    <option value="">Все типы</option>
+                    <option value="in" {% if current_filters.type == 'in' %}selected{% endif %}>Поступление</option>
+                    <option value="out" {% if current_filters.type == 'out' %}selected{% endif %}>Отгрузка</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="product">
+                    <option value="">Все товары</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}" {% if current_filters.product|string == product.id|string %}selected{% endif %}>
+                        {{ product.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" name="date_from" 
+                       value="{{ current_filters.date_from }}" placeholder="С даты">
+            </div>
+            <div class="col-md-3">
+                <input type="date" class="form-control" name="date_to" 
+                       value="{{ current_filters.date_to }}" placeholder="По дату">
+            </div>
+            <div class="col-12 text-center mt-2">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-filter me-2"></i>Применить фильтры
+                </button>
+                <a href="{{ url_for('movements') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle me-2"></i>Сбросить
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">История движений (всего: {{ movements.total }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Дата и время</th>
+                        <th>Товар</th>
+                        <th>Тип</th>
+                        <th>Количество</th>
+                        <th>Цена за ед.</th>
+                        <th>Общая сумма</th>
+                        <th>Склад</th>
+                        <th>Документ</th>
+                        <th>Примечания</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in movements.items %}
+                    <tr>
+                        <td>{{ movement.movement_date.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>
+                            <strong>{{ movement.product.name }}</strong>
+                            <br><small class="text-muted">SKU: {{ movement.product.sku }}</small>
+                        </td>
+                        <td>
+                            {% if movement.movement_type == 'in' %}
+                            <span class="badge bg-success">Поступление</span>
+                            {% else %}
+                            <span class="badge bg-warning">Отгрузка</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if movement.movement_type == 'in' %}
+                            <span class="text-success">+{{ movement.quantity }}</span>
+                            {% else %}
+                            <span class="text-danger">-{{ movement.quantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ "{:,.0f}".format(movement.unit_price).replace(",", " ") }} руб.</td>
+                        <td><strong>{{ "{:,.0f}".format(movement.total_value).replace(",", " ") }} руб.</strong></td>
+                        <td>{{ movement.warehouse.name }}</td>
+                        <td>
+                            {% if movement.document_number %}
+                            <span class="badge bg-info">{{ movement.document_number }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if movement.notes %}
+                            <small class="text-muted">{{ movement.notes[:30] }}{% if movement.notes|length > 30 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if movements.pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if movements.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('movements', page=movements.prev_num, **current_filters) }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in movements.iter_pages(left_edge=2, left_current=2, right_current=2, right_edge=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == movements.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('movements', page=page_num, **current_filters) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if movements.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('movements', page=movements.next_num, **current_filters) }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">
+                    <i class="bi bi-box-arrow-in-down me-2"></i>Поступления
+                </h5>
+                <h3 class="text-success">
+                    {% set total_in = movements.items|selectattr('movement_type', 'equalto', 'in')|map(attribute='quantity')|sum %}
+                    +{{ total_in }}
+                </h3>
+                <p class="card-text">единиц товара</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">
+                    <i class="bi bi-box-arrow-up me-2"></i>Отгрузки
+                </h5>
+                <h3 class="text-warning">
+                    {% set total_out = movements.items|selectattr('movement_type', 'equalto', 'out')|map(attribute='quantity')|sum %}
+                    -{{ total_out }}
+                </h3>
+                <p class="card-text">единиц товара</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    <i class="bi bi-cash-coin me-2"></i>Оборот
+                </h5>
+                <h3 class="text-primary">
+                    {% set total_value = movements.items|map(attribute='total_value')|sum %}
+                    {{ "{:,.0f}".format(total_value).replace(",", " ") }} руб.
+                </h3>
+                <p class="card-text">общая сумма</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

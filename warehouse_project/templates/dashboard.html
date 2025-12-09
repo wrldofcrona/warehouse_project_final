@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Дашборд - Управление складом{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Статистика -->
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                    <div class="stat-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="stat-number">{{ total_products }}</div>
+                    <div class="stat-label">Всего товаров</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                    <div class="stat-icon">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div class="stat-number">{{ total_warehouses }}</div>
+                    <div class="stat-label">Складов</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    <div class="stat-icon">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <div class="stat-number">{{ total_movements }}</div>
+                    <div class="stat-label">Движений</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                    <div class="stat-icon">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-number">{{ low_stock|length }}</div>
+                    <div class="stat-label">Низкий запас</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Заполненность складов -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-building me-2"></i>Заполненность складов</h5>
+            </div>
+            <div class="card-body">
+                {% for stats in warehouse_stats.values() %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <strong>{{ stats.name }}</strong>
+                        <span>{{ "%.1f"|format(stats.capacity_percent) }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar 
+                            {% if stats.capacity_percent > 80 %}bg-danger
+                            {% elif stats.capacity_percent > 60 %}bg-warning
+                            {% else %}bg-success{% endif %}" 
+                            role="progressbar" 
+                            style="width: {{ stats.capacity_percent }}%"
+                            aria-valuenow="{{ stats.capacity_percent }}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        {{ stats.total_quantity }} ед. • {{ "{:,.0f}".format(stats.total_value).replace(",", " ") }} руб. • 
+                        {{ stats.low_stock_count }} товаров с низким запасом
+                    </small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Последние движения</h5>
+                <a href="{{ url_for('movements') }}" class="btn btn-sm btn-outline-primary">
+                    Все движения <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Товар</th>
+                                <th>Тип</th>
+                                <th>Кол-во</th>
+                                <th>Сумма</th>
+                                <th>Документ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in recent_movements %}
+                            <tr>
+                                <td>{{ movement.movement_date.strftime('%d.%m %H:%M') }}</td>
+                                <td>
+                                    <strong>{{ movement.product.name }}</strong>
+                                    <br><small class="text-muted">{{ movement.product.sku }}</small>
+                                </td>
+                                <td>
+                                    {% if movement.movement_type == 'in' %}
+                                    <span class="badge bg-success">Поступление</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Отгрузка</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ movement.quantity }}</td>
+                                <td>{{ "{:,.0f}".format(movement.total_value).replace(",", " ") }} руб.</td>
+                                <td><small>{{ movement.document_number }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('add_product') }}" class="btn btn-primary btn-custom">
+                        <i class="bi bi-plus-circle me-2"></i>Добавить товар
+                    </a>
+                    <a href="{{ url_for('add_movement') }}" class="btn btn-success btn-custom">
+                        <i class="bi bi-arrow-down-up me-2"></i>Добавить движение
+                    </a>
+                    <a href="{{ url_for('add_warehouse') }}" class="btn btn-info btn-custom">
+                        <i class="bi bi-building me-2"></i>Добавить склад
+                    </a>
+                    <a href="{{ url_for('add_supplier') }}" class="btn btn-warning btn-custom">
+                        <i class="bi bi-truck me-2"></i>Добавить поставщика
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="btn btn-secondary btn-custom">
+                        <i class="bi bi-graph-up me-2"></i>Смотреть отчеты
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Товары с низким запасом -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Товары с низким запасом</h5>
+            </div>
+            <div class="card-body">
+                {% if low_stock %}
+                <div class="list-group">
+                    {% for item in low_stock %}
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ item.name }}</h6>
+                            <small class="text-danger">{{ item.current }}/{{ item.min }}</small>
+                        </div>
+                        <p class="mb-1">
+                            <small>SKU: {{ item.sku }}</small><br>
+                            <small>Категория: {{ item.category }}</small><br>
+                            <small>Склад: {{ item.warehouse }}</small>
+                        </p>
+                        <a href="{{ url_for('edit_product', product_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                            Пополнить
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>Все товары в норме!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar-day me-2"></i>Сегодня ({{ daily_report.date }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h4 class="text-primary">{{ daily_report.movements_count }}</h4>
+                            <small>Движений</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h4 class="text-success">{{ daily_report.new_products }}</h4>
+                            <small>Новых товаров</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <h5 class="text-warning">{{ "{:,.0f}".format(daily_report.total_value).replace(",", " ") }} руб.</h5>
+                    <small>Общая стоимость товаров на складах</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Распределение товаров по категориям</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category in categories %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="p-3 text-center rounded" style="background-color: #f8f9fa;">
+                            <h6 class="mb-1">{{ category.category or 'Без категории' }}</h6>
+                            <h4 class="text-primary mb-1">{{ category.count }}</h4>
+                            <small class="text-muted">
+                                {{ category.total_quantity }} ед.<br>
+                                {{ "{:,.0f}".format(category.total_value).replace(",", " ") }} руб.
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

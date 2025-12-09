@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Редактировать склад - Управление складом{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-building me-2"></i>Редактировать склад</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="code" class="form-label">Код склада *</label>
+                            <input type="text" class="form-control" id="code" name="code" 
+                                   value="{{ warehouse.code }}" readonly>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Название склада *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ warehouse.name }}" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="location" class="form-label">Местоположение *</label>
+                            <textarea class="form-control" id="location" name="location" 
+                                      rows="2" required>{{ warehouse.location or '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="max_capacity" class="form-label">Максимальная вместимость *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="max_capacity" 
+                                       name="max_capacity" min="100" value="{{ warehouse.max_capacity }}" required>
+                                <span class="input-group-text">ед.</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('warehouses') }}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Назад
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-2"></i>Сохранить изменения
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Добавить поставщика - Управление складом{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-truck me-2"></i>Добавить нового поставщика</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="code" class="form-label">Код поставщика *</label>
+                            <input type="text" class="form-control" id="code" name="code" 
+                                   placeholder="SUP-001" required>
+                            <div class="form-text">Уникальный идентификатор поставщика</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Название компании *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="ООО 'ТехноПоставка'" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="contact_person" class="form-label">Контактное лицо</label>
+                            <input type="text" class="form-control" id="contact_person" 
+                                   name="contact_person" placeholder="Иванов Иван Иванович">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Телефон</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   placeholder="+7 (999) 123-45-67">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="info@company.ru">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="rating" class="form-label">Начальный рейтинг</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="rating" 
+                                       name="rating" min="1" max="5" step="0.1" value="5.0">
+                                <span class="input-group-text">
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                </span>
+                            </div>
+                            <div class="form-text">От 1.0 до 5.0</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="address" class="form-label">Адрес</label>
+                            <textarea class="form-control" id="address" name="address" 
+                                      rows="2" placeholder="Юридический адрес компании..."></textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="website" class="form-label">Веб-сайт</label>
+                            <input type="url" class="form-control" id="website" name="website" 
+                                   placeholder="https://company.ru">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="payment_terms" class="form-label">Условия оплаты</label>
+                            <select class="form-select" id="payment_terms" name="payment_terms">
+                                <option value="prepayment">Предоплата 100%</option>
+                                <option value="partial" selected>Предоплата 50%</option>
+                                <option value="postpayment">Оплата по факту</option>
+                                <option value="installment">Рассрочка</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="delivery_time" class="form-label">Срок доставки (дни)</label>
+                            <input type="number" class="form-control" id="delivery_time" 
+                                   name="delivery_time" min="1" value="7">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="min_order" class="form-label">Минимальный заказ</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="min_order" 
+                                       name="min_order" min="0" value="0">
+                                <span class="input-group-text">руб.</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="notes" class="form-label">Примечания</label>
+                            <textarea class="form-control" id="notes" name="notes" 
+                                      rows="3" placeholder="Особые условия сотрудничества, скидки и т.д."></textarea>
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('suppliers') }}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Назад к поставщикам
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-2"></i>Сохранить поставщика
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Как выбрать хорошего поставщика?</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-check-circle text-success me-2"></i>Признаки надежного поставщика:</h6>
+                        <ul class="mb-0">
+                            <li>Быстрая реакция на запросы</li>
+                            <li>Прозрачные условия сотрудничества</li>
+                            <li>Гарантия качества товаров</li>
+                            <li>Гибкая система оплаты</li>
+                            <li>Соблюдение сроков поставки</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-exclamation-triangle text-warning me-2"></i>Тревожные сигналы:</h6>
+                        <ul class="mb-0">
+                            <li>Неполная контактная информация</li>
+                            <li>Отсутствие гарантий и сертификатов</li>
+                            <li>Скрытые дополнительные платежи</li>
+                            <li>Постоянные задержки поставок</li>
+                            <li>Низкое качество коммуникации</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.getElementById('code');
+    const nameInput = document.getElementById('name');
+    
+    nameInput.addEventListener('blur', function() {
+        if (!codeInput.value) {
+            const name = nameInput.value
+                .toUpperCase()
+                .replace(/[^A-ZА-Я0-9]/g, '')
+                .substring(0, 6);
+            
+            if (name.length > 0) {
+                codeInput.value = 'SUP-' + name;
+            }
+        }
+    });
+    
+    // Маска для телефона
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        if (value.length > 0) {
+            value = '+7 (' + value.substring(1, 4) + ') ' + value.substring(4, 7) + '-' + 
+                    value.substring(7, 9) + '-' + value.substring(9, 11);
+        }
+        
+        e.target.value = value;
+    });
+});
+</script>
+{% endblock %}

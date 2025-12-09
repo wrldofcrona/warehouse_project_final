@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Добавить движение - Управление складом{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Добавить движение товара</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="product_id" class="form-label">Товар *</label>
+                            <select class="form-select" id="product_id" name="product_id" required>
+                                <option value="">Выберите товар...</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" 
+                                        data-quantity="{{ product.quantity }}"
+                                        data-price="{{ product.unit_price }}"
+                                        data-warehouse="{{ product.warehouse_id }}"
+                                        {% if request.args.get('product_id')|int == product.id %}selected{% endif %}>
+                                    {{ product.name }} (SKU: {{ product.sku }}) - Остаток: {{ product.quantity }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="movement_type" class="form-label">Тип движения *</label>
+                            <select class="form-select" id="movement_type" name="movement_type" required>
+                                <option value="">Выберите тип...</option>
+                                <option value="in">Поступление на склад</option>
+                                <option value="out">Отгрузка со склада</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12" id="product-info" style="display: none;">
+                            <div class="alert alert-info">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Текущий остаток:</strong> 
+                                        <span id="current-quantity">0</span> ед.
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Цена:</strong> 
+                                        <span id="current-price">0</span> руб.
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Текущий склад:</strong> 
+                                        <span id="current-warehouse">Не указан</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="quantity" class="form-label">Количество *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="quantity" 
+                                       name="quantity" min="1" value="1" required>
+                                <span class="input-group-text">ед.</span>
+                            </div>
+                            <div class="form-text" id="quantity-hint"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Общая сумма</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="total-value" 
+                                       readonly value="0 руб.">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="warehouse_id" class="form-label">Склад *</label>
+                            <select class="form-select" id="warehouse_id" name="warehouse_id" required>
+                                <option value="">Выберите склад...</option>
+                                {% for warehouse in warehouses %}
+                                <option value="{{ warehouse.id }}">
+                                    {{ warehouse.code }} - {{ warehouse.name }}
+                                    {% if warehouse.location %}({{ warehouse.location }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text" id="warehouse-hint">
+                                Для поступления - склад назначения<br>
+                                Для отгрузки - склад отгрузки
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="document_number" class="form-label">Номер документа</label>
+                            <input type="text" class="form-control" id="document_number" 
+                                   name="document_number" placeholder="Накладная №...">
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label for="notes" class="form-label">Примечания</label>
+                            <textarea class="form-control" id="notes" name="notes" 
+                                      rows="2" placeholder="Особые указания..."></textarea>
+                        </div>
+                        
+                        <div class="col-12" id="warning-message" style="display: none;">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <span id="warning-text"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('movements') }}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Назад к движениям
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="submit-btn">
+                                    <i class="bi bi-save me-2"></i>Сохранить движение
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('product_id');
+    const movementTypeSelect = document.getElementById('movement_type');
+    const warehouseSelect = document.getElementById('warehouse_id');
+    const quantityInput = document.getElementById('quantity');
+    const totalValueInput = document.getElementById('total-value');
+    const productInfo = document.getElementById('product-info');
+    const warningMessage = document.getElementById('warning-message');
+    const submitBtn = document.getElementById('submit-btn');
+    const quantityHint = document.getElementById('quantity-hint');
+    const warehouseHint = document.getElementById('warehouse-hint');
+    
+    let currentProduct = null;
+    let productWarehouses = {}; // Для хранения складов товаров
+    
+    // Обновление информации о товаре
+    function updateProductInfo() {
+        if (productSelect.value) {
+            const option = productSelect.options[productSelect.selectedIndex];
+            currentProduct = {
+                id: option.value,
+                quantity: parseInt(option.dataset.quantity),
+                price: parseFloat(option.dataset.price),
+                warehouse: option.dataset.warehouse
+            };
+            
+            productInfo.style.display = 'block';
+            document.getElementById('current-quantity').textContent = currentProduct.quantity;
+            document.getElementById('current-price').textContent = currentProduct.price.toLocaleString('ru-RU');
+            
+            // Название склада
+            let warehouseName = 'Не указан';
+            if (currentProduct.warehouse) {
+                warehouseName = `Склад ID: ${currentProduct.warehouse}`;
+            }
+            document.getElementById('current-warehouse').textContent = warehouseName;
+            
+            quantityHint.textContent = `Доступно: ${currentProduct.quantity} единиц`;
+            
+            calculateTotal();
+            
+            if (currentProduct.warehouse) {
+                warehouseSelect.value = currentProduct.warehouse;
+            }
+            
+            checkAvailability();
+        } else {
+            productInfo.style.display = 'none';
+            warningMessage.style.display = 'none';
+            currentProduct = null;
+        }
+    }
+    
+    function calculateTotal() {
+        if (currentProduct && quantityInput.value) {
+            const quantity = parseInt(quantityInput.value);
+            const total = quantity * currentProduct.price;
+            totalValueInput.value = total.toLocaleString('ru-RU') + ' руб.';
+        }
+    }
+    
+    function updateWarehouseHint() {
+        const movementType = movementTypeSelect.value;
+        if (movementType === 'in') {
+            warehouseHint.textContent = 'Выберите склад для поступления товара';
+            warehouseHint.style.color = '#198754'; // зеленый
+        } else if (movementType === 'out') {
+            warehouseHint.textContent = 'Выберите склад откуда отгружается товар';
+            warehouseHint.style.color = '#dc3545'; // красный
+        } else {
+            warehouseHint.textContent = 'Для поступления - склад назначения\nДля отгрузки - склад отгрузки';
+            warehouseHint.style.color = '#6c757d'; // серый
+        }
+    }
+    
+    function checkAvailability() {
+        warningMessage.style.display = 'none';
+        submitBtn.disabled = false;
+        
+        if (!currentProduct || movementTypeSelect.value !== 'out') {
+            return;
+        }
+        
+        const requestedQuantity = parseInt(quantityInput.value);
+        const selectedWarehouse = warehouseSelect.value;
+        
+        if (requestedQuantity > currentProduct.quantity) {
+            warningMessage.style.display = 'block';
+            warningMessage.querySelector('#warning-text').textContent = 
+                `Недостаточно товара на складе! Доступно: ${currentProduct.quantity} единиц.`;
+            submitBtn.disabled = true;
+            return;
+        }
+        
+        if (selectedWarehouse && currentProduct.warehouse && 
+            selectedWarehouse != currentProduct.warehouse) {
+            warningMessage.style.display = 'block';
+            warningMessage.querySelector('#warning-text').textContent = 
+                `Товар находится на другом складе! Убедитесь, что выбрали правильный склад.`;
+        }
+    }
+    
+    // Обработчики событий
+    productSelect.addEventListener('change', updateProductInfo);
+    movementTypeSelect.addEventListener('change', function() {
+        updateWarehouseHint();
+        checkAvailability();
+    });
+    warehouseSelect.addEventListener('change', checkAvailability);
+    quantityInput.addEventListener('input', function() {
+        calculateTotal();
+        checkAvailability();
+    });
+    
+    // Инициализация
+    updateWarehouseHint();
+    if (productSelect.value) {
+        updateProductInfo();
+    }
+    
+    // Автоматический расчет при загрузке
+    calculateTotal();
+});
+</script>
+{% endblock %}

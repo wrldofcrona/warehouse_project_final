@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Поиск - Управление складом{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-search me-2"></i>Результаты поиска: "{{ query }}"</h4>
+            </div>
+            <div class="card-body">
+                
+                {% if products %}
+                <h5><i class="bi bi-box-seam me-2"></i>Товары ({{ products|length }})</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Название</th>
+                                <th>Категория</th>
+                                <th>Количество</th>
+                                <th>Цена</th>
+                                <th>Склад</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>{{ product.sku }}</td>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.category }}</td>
+                                <td>{{ product.quantity }}</td>
+                                <td>{{ product.unit_price }} руб.</td>
+                                <td>{{ product.warehouse.name if product.warehouse else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% if warehouses %}
+                <h5><i class="bi bi-building me-2"></i>Склады ({{ warehouses|length }})</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Код</th>
+                                <th>Название</th>
+                                <th>Местоположение</th>
+                                <th>Вместимость</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for warehouse in warehouses %}
+                            <tr>
+                                <td>{{ warehouse.code }}</td>
+                                <td>{{ warehouse.name }}</td>
+                                <td>{{ warehouse.location or '-' }}</td>
+                                <td>{{ warehouse.max_capacity }} ед.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% if suppliers %}
+                <h5><i class="bi bi-truck me-2"></i>Поставщики ({{ suppliers|length }})</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Код</th>
+                                <th>Название</th>
+                                <th>Контактное лицо</th>
+                                <th>Телефон</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for supplier in suppliers %}
+                            <tr>
+                                <td>{{ supplier.code }}</td>
+                                <td>{{ supplier.name }}</td>
+                                <td>{{ supplier.contact_person or '-' }}</td>
+                                <td>{{ supplier.phone or '-' }}</td>
+                                <td>{{ supplier.email or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% if not products and not warehouses and not suppliers %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    По запросу "{{ query }}" ничего не найдено
+                </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="bi bi-house me-2"></i>На главную
+                    </a>
+                    <a href="{{ url_for('products') }}" class="btn btn-secondary">
+                        <i class="bi bi-box-seam me-2"></i>К товарам
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Поставщики - Управление складом{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-truck me-2"></i>Поставщики</h2>
+    <a href="{{ url_for('add_supplier') }}" class="btn btn-primary btn-custom">
+        <i class="bi bi-plus-circle me-2"></i>Добавить поставщика
+    </a>
+</div>
+
+<div class="row mb-4">
+    {% for supplier in suppliers %}
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ supplier.code }}</h5>
+                <span class="badge {% if supplier.rating >= 4.5 %}bg-success
+                                  {% elif supplier.rating >= 3.5 %}bg-warning
+                                  {% else %}bg-danger{% endif %}">
+                    {{ "%.1f"|format(supplier.rating) }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h4>{{ supplier.name }}</h4>
+                
+                <!-- Контактная информация -->
+                <div class="mb-3">
+                    {% if supplier.contact_person %}
+                    <p class="mb-1">
+                        <i class="bi bi-person me-2"></i>{{ supplier.contact_person }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if supplier.phone %}
+                    <p class="mb-1">
+                        <i class="bi bi-telephone me-2"></i>{{ supplier.phone }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if supplier.email %}
+                    <p class="mb-1">
+                        <i class="bi bi-envelope me-2"></i>
+                        <a href="mailto:{{ supplier.email }}" class="text-decoration-none">
+                            {{ supplier.email }}
+                        </a>
+                    </p>
+                    {% endif %}
+                    
+                    {% if supplier.address %}
+                    <p class="mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        <small class="text-muted">{{ supplier.address[:50] }}{% if supplier.address|length > 50 %}...{% endif %}</small>
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="p-2 bg-light rounded">
+                            <h6 class="mb-0 text-primary">{{ supplier.product_count }}</h6>
+                            <small>Товаров</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 bg-light rounded">
+                            <h6 class="mb-0 text-warning">{{ supplier.order_count }}</h6>
+                            <small>Заказов</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Действия -->
+                <div class="mt-3">
+                    <a href="{{ url_for('products') }}?supplier={{ supplier.id }}" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-box-seam me-1"></i>Товары
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm ms-1">
+                        <i class="bi bi-cart-plus me-1"></i>Заказать
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Все поставщики</h5>
+        <div>
+            <button class="btn btn-sm btn-outline-success me-2">
+                <i class="bi bi-download me-1"></i>Экспорт
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Код</th>
+                        <th>Название компании</th>
+                        <th>Контактное лицо</th>
+                        <th>Телефон</th>
+                        <th>Email</th>
+                        <th>Рейтинг</th>
+                        <th>Товаров</th>
+                        <th>Заказов</th>
+                        <th>Дата регистрации</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr>
+                        <td><strong>{{ supplier.code }}</strong></td>
+                        <td>{{ supplier.name }}</td>
+                        <td>{{ supplier.contact_person or '—' }}</td>
+                        <td>{{ supplier.phone or '—' }}</td>
+                        <td>
+                            {% if supplier.email %}
+                            <a href="mailto:{{ supplier.email }}" class="text-decoration-none">
+                                {{ supplier.email }}
+                            </a>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rating me-2">
+                                    {% for i in range(5) %}
+                                        {% if i < supplier.rating|int %}
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                        {% else %}
+                                        <i class="bi bi-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <span>{{ "%.1f"|format(supplier.rating) }}</span>
+                            </div>
+                        </td>
+                        <td>{{ supplier.product_count }}</td>
+                        <td>{{ supplier.order_count }}</td>
+                        <td>{{ supplier.created_at.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            {% if supplier.rating >= 4.5 %}
+                            <span class="badge bg-success">Надежный</span>
+                            {% elif supplier.rating >= 3.5 %}
+                            <span class="badge bg-warning">Средний</span>
+                            {% else %}
+                            <span class="badge bg-danger">Проблемный</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="#" class="btn btn-outline-primary" title="Редактировать">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ url_for('products') }}?supplier={{ supplier.id }}" 
+                                   class="btn btn-outline-info" title="Товары">
+                                    <i class="bi bi-box-seam"></i>
+                                </a>
+                                <a href="#" class="btn btn-outline-success" title="Создать заказ">
+                                    <i class="bi bi-cart-plus"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Распределение по рейтингу</h6>
+            </div>
+            <div class="card-body">
+                {% set reliable = suppliers|selectattr('rating', 'ge', 4.5)|list|length %}
+                {% set average = suppliers|selectattr('rating', 'ge', 3.5)|selectattr('rating', 'lt', 4.5)|list|length %}
+                {% set problematic = suppliers|selectattr('rating', 'lt', 3.5)|list|length %}
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="p-3 rounded" style="background-color: #d4edda;">
+                            <h4 class="text-success">{{ reliable }}</h4>
+                            <small>Надежные</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded" style="background-color: #fff3cd;">
+                            <h4 class="text-warning">{{ average }}</h4>
+                            <small>Средние</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded" style="background-color: #f8d7da;">
+                            <h4 class="text-danger">{{ problematic }}</h4>
+                            <small>Проблемные</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Статистика поставщиков</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        Всего поставщиков: <strong>{{ suppliers|length }}</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        Средний рейтинг: <strong>{{ "%.2f"|format(suppliers|map(attribute='rating')|sum / suppliers|length if suppliers|length > 0 else 0) }}</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        Товаров от поставщиков: <strong>{{ suppliers|map(attribute='product_count')|sum }}</strong>
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        Активных заказов: <strong>{{ suppliers|map(attribute='order_count')|sum }}</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

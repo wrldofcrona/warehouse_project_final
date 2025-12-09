@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Аналитические отчёты (DWH)</h2>
+
+    <!-- ТОП товаров -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            ТОП-10 товаров по стоимости движений
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr><th>Товар</th><th>Стоимость (₽)</th></tr>
+                </thead>
+                <tbody>
+                {% for item in top_products %}
+                    <tr>
+                        <td>{{ item[0] }}</td>
+                        <td>{{ "%.2f"|format(item[1]) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Активность складов -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            Активность складов (количество перемещённого товара)
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead><tr><th>Склад</th><th>Количество</th></tr></thead>
+                <tbody>
+                {% for row in warehouse_activity %}
+                    <tr>
+                        <td>{{ row[0] }}</td>
+                        <td>{{ row[1] }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            Динамика движений по датам
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead><tr><th>Дата</th><th>Нетто-движение</th></tr></thead>
+                <tbody>
+                {% for d in movement_trend %}
+                    <tr>
+                        <td>{{ d[0] }}</td>
+                        <td>{{ d[1] }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

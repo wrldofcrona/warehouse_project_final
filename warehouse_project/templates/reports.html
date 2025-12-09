@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Отчеты - Управление складом{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    
+    .chart-img:hover {
+        transform: scale(1.02);
+    }
+    
+    .report-card {
+        height: 100%;
+    }
+    
+    .table-sm th, .table-sm td {
+        padding: 0.5rem;
+    }
+    
+    .value-cell {
+        font-weight: 600;
+    }
+    
+    .positive {
+        color: #28a745;
+    }
+    
+    .negative {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up me-2"></i>Отчеты и аналитика</h2>
+    <div>
+        <button class="btn btn-outline-success me-2" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i>Печать
+        </button>
+        <button class="btn btn-outline-primary" onclick="exportReport()">
+            <i class="bi bi-download me-2"></i>Экспорт
+        </button>
+    </div>
+</div>
+
+<!-- Навигация по отчетам -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-3 col-6">
+                <a href="#stock-report" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-box-seam me-2"></i>Запасы
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a href="#warehouse-report" class="btn btn-outline-info w-100">
+                    <i class="bi bi-building me-2"></i>Склады
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a href="#movement-report" class="btn btn-outline-success w-100">
+                    <i class="bi bi-arrow-left-right me-2"></i>Движения
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a href="#low-stock-report" class="btn btn-outline-danger w-100">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Низкий запас
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card report-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Распределение товаров по категориям</h5>
+            </div>
+            <div class="card-body text-center">
+                <img src="data:image/png;base64,{{ chart1 }}" alt="Категории товаров" class="chart-img mb-3">
+                <p class="text-muted mb-0">Круговая диаграмма показывает распределение товаров и их стоимость по категориям</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card report-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Заполненность складов</h5>
+            </div>
+            <div class="card-body text-center">
+                <img src="data:image/png;base64,{{ chart2 }}" alt="Заполненность складов" class="chart-img mb-3">
+                <p class="text-muted mb-0">Столбчатая диаграмма отображает процент заполнения и стоимость товаров на каждом складе</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4" id="movement-report">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Динамика движений товаров (последние 30 дней)</h5>
+    </div>
+    <div class="card-body text-center">
+        <img src="data:image/png;base64,{{ chart3 }}" alt="Динамика движений" class="chart-img mb-3">
+        <p class="text-muted">График показывает ежедневный нетто-оборот товаров (поступления минус отгрузки)</p>
+    </div>
+</div>
+
+<!-- Топ товаров -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card report-card" id="stock-report">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Топ-10 товаров по стоимости запасов</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Товар</th>
+                                <th>Количество</th>
+                                <th>Стоимость</th>
+                                <th>Категория</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products_by_value %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <strong>{{ product.name }}</strong>
+                                    <br><small class="text-muted">{{ product.sku }}</small>
+                                </td>
+                                <td class="value-cell">{{ product.quantity }}</td>
+                                <td class="value-cell text-primary">
+                                    {{ "{:,.0f}".format(product.total_value).replace(",", " ") }} руб.
+                                </td>
+                                <td><span class="badge bg-info">{{ product.category }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card report-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Топ-10 товаров по количеству</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Товар</th>
+                                <th>Количество</th>
+                                <th>Стоимость</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products_by_quantity %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <strong>{{ product.name }}</strong>
+                                    <br><small class="text-muted">{{ product.sku }}</small>
+                                </td>
+                                <td class="value-cell">{{ product.quantity }}</td>
+                                <td class="value-cell">
+                                    {{ "{:,.0f}".format(product.total_value).replace(",", " ") }} руб.
+                                </td>
+                                <td>
+                                    {% if product.quantity <= product.min_quantity %}
+                                    <span class="badge bg-danger">Низкий запас</span>
+                                    {% elif product.quantity <= product.min_quantity * 1.5 %}
+                                    <span class="badge bg-warning">Внимание</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Норма</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4" id="low-stock-report">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Товары с низким запасом</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Товар</th>
+                        <th>SKU</th>
+                        <th>Категория</th>
+                        <th>Текущий остаток</th>
+                        <th>Минимальный</th>
+                        <th>Дефицит</th>
+                        <th>Цена</th>
+                        <th>Склад</th>
+                        <th>Приоритет</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in low_stock %}
+                    <tr>
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td>{{ item.sku }}</td>
+                        <td><span class="badge bg-info">{{ item.category }}</span></td>
+                        <td class="value-cell">{{ item.current }}</td>
+                        <td>{{ item.min }}</td>
+                        <td class="value-cell negative">
+                            {{ item.min - item.current }} ед.
+                        </td>
+                        <td>{{ "{:,.0f}".format(item.unit_price).replace(",", " ") }} руб.</td>
+                        <td>{{ item.warehouse }}</td>
+                        <td>
+                            {% set deficit_percent = ((item.min - item.current) / item.min * 100) %}
+                            {% if deficit_percent > 50 %}
+                            <span class="badge bg-danger">Критический</span>
+                            {% elif deficit_percent > 30 %}
+                            <span class="badge bg-warning">Высокий</span>
+                            {% else %}
+                            <span class="badge bg-info">Средний</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="warehouse-report">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-building me-2"></i>Статистика складов</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Склад</th>
+                        <th>Заполненность</th>
+                        <th>Товаров</th>
+                        <th>Общее количество</th>
+                        <th>Общая стоимость</th>
+                        <th>Товаров с низким запасом</th>
+                        <th>Эффективность</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stats in warehouse_stats.values() %}
+                    <tr>
+                        <td>
+                            <strong>{{ stats.name }}</strong>
+                            <br><small class="text-muted">{{ stats.location }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                    <div class="progress-bar 
+                                        {% if stats.capacity_percent < 60 %}bg-success
+                                        {% elif stats.capacity_percent < 80 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                        style="width: {{ stats.capacity_percent }}%">
+                                    </div>
+                                </div>
+                                <span>{{ "%.1f"|format(stats.capacity_percent) }}%</span>
+                            </div>
+                        </td>
+                        <td class="value-cell">{{ stats.total_products }}</td>
+                        <td class="value-cell">{{ stats.total_quantity }}</td>
+                        <td class="value-cell text-primary">
+                            {{ "{:,.0f}".format(stats.total_value).replace(",", " ") }} руб.
+                        </td>
+                        <td class="value-cell {% if stats.low_stock_count > 0 %}negative{% endif %}">
+                            {{ stats.low_stock_count }}
+                        </td>
+                        <td>
+                            {% set efficiency = (stats.total_products / stats.total_quantity * 100) if stats.total_quantity > 0 else 0 %}
+                            {% if efficiency > 80 %}
+                            <span class="badge bg-success">Высокая</span>
+                            {% elif efficiency > 50 %}
+                            <span class="badge bg-warning">Средняя</span>
+                            {% else %}
+                            <span class="badge bg-danger">Низкая</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-primary">
+                        <td><strong>Итого:</strong></td>
+                        <td>
+                            {% set avg_capacity = warehouse_stats.values()|map(attribute='capacity_percent')|sum / warehouse_stats.values()|length if warehouse_stats %}
+                            {{ "%.1f"|format(avg_capacity) }}%
+                        </td>
+                        <td>
+                            {{ warehouse_stats.values()|map(attribute='total_products')|sum }}
+                        </td>
+                        <td>
+                            {{ warehouse_stats.values()|map(attribute='total_quantity')|sum }}
+                        </td>
+                        <td>
+                            {{ "{:,.0f}".format(warehouse_stats.values()|map(attribute='total_value')|sum).replace(",", " ") }} руб.
+                        </td>
+                        <td>
+                            {{ warehouse_stats.values()|map(attribute='low_stock_count')|sum }}
+                        </td>
+                        <td>—</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <div class="btn-group">
+            <button class="btn btn-success" onclick="exportToPDF()">
+                <i class="bi bi-file-pdf me-2"></i>Экспорт в PDF
+            </button>
+            <button class="btn btn-info" onclick="exportToExcel()">
+                <i class="bi bi-file-excel me-2"></i>Экспорт в Excel
+            </button>
+            <button class="btn btn-secondary" onclick="exportToCSV()">
+                <i class="bi bi-file-text me-2"></i>Экспорт в CSV
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReport() {
+    alert('Функция экспорта будет реализована в следующей версии');
+}
+
+function exportToPDF() {
+    alert('Экспорт в PDF будет доступен после настройки сервера отчетов');
+}
+
+function exportToExcel() {
+    alert('Экспорт в Excel будет доступен после настройки сервера отчетов');
+}
+
+function exportToCSV() {
+    alert('Экспорт в CSV будет доступен после настройки сервера отчетов');
+}
+
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        if (targetId !== '#') {
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
